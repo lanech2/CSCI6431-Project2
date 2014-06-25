@@ -1,0 +1,11 @@
+#README file for CSCI 6431, Computer Networks, GWU Summer 2014
+#Project 2, HTTP Proxy Server
+
+Compiling is simple;
+- Requirements: latest version of Java SDK installed
+- ensure javac is accessible through your path.
+- type "javac csci6431/HTTPProxyServer.java"; this will compile the program and output csci6431/HTTPProxyServer.class.
+
+Running is also simple:
+- type "java csci6431.HTTPProxyServer <port number>".
+
