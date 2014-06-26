@@ -3,18 +3,13 @@ package csci6431;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.HttpURLConnection;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLConnection;
 
 public class ProxyThread extends Thread {
-	private static final int BUFFER_SIZE = 65536;
 	private Socket socket = null;
 	
 	public ProxyThread(Socket socket) {
@@ -24,6 +19,7 @@ public class ProxyThread extends Thread {
 	
 	public void run() {
 		try {
+			System.out.println("Running...");
 			DataOutputStream outToClient = new DataOutputStream(socket.getOutputStream());
 			BufferedReader inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			
@@ -34,9 +30,9 @@ public class ProxyThread extends Thread {
 			URI uri = null;
 			String host = "";
 			String path = "";
-			String header = "";
+			String header = "";			
 			
-			while ((inLine = inFromClient.readLine()) != null) {
+			while (((inLine = inFromClient.readLine()) != "\t")) {
 				//handle the first line, the rest goes to the header variable
 				if (cnt == 0) {
 					String[] tokens = inLine.split(" ");
@@ -47,33 +43,51 @@ public class ProxyThread extends Thread {
 					path = uri.getRawPath();
 					System.out.println("Request for host: " + host + " and path: " + path);
 				} else {
+					System.out.println("inLine added to header: " + inLine);
 					header += inLine;
 					header += "\r\n";
 				}
 				cnt++;
 			}
 			
+			header += "\r\n";
+
+			System.out.println("host = " + host);
+			System.out.println("path = " + path);
+			System.out.println("httpStr = " + httpStr);
+			System.out.println("header = " + header);
+//			String host = "www.google.com";
+//			String path = "/movies";
+//			String httpStr = "HTTP/1.1";
+//			String header = "User-Agent: curl/7.37.0\r\n" +
+//							"Host: www.google.com\r\n" +
+//							"Accept: */*\r\n" +
+//							"Proxy-Connection: Keep-Alive\r\n\r\n";
+			
 			Socket serverSocket = new Socket(host, 80);
 			
 			String requestString = "GET " + path + " " + httpStr + "\r\n";
 			requestString += header;
-			PrintWriter request = new PrintWriter(serverSocket.getOutputStream());
-			request.print(requestString);
-			request.flush();
+			PrintWriter outToServer = new PrintWriter(serverSocket.getOutputStream());
+			outToServer.print(requestString);
+			outToServer.flush();
 			
-			InputStream inStr = serverSocket.getInputStream();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(inStr));
-			String inFromServer;
-			while ((inFromServer = reader.readLine()) != null) {
-				System.out.println(inFromServer);
+			BufferedReader inFromServer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+			String inStr;
+			while ((inStr = inFromServer.readLine()) != null) {
+				System.out.println(inStr);
 			}
 			
 			serverSocket.close();
 			socket.close();
+		} catch (SocketException e) {
+			System.out.println("Caught SocketException: " + e.getMessage());
 		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
+			System.out.println("Caught IOException: " + e.getMessage());
+//		} catch (URISyntaxException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
