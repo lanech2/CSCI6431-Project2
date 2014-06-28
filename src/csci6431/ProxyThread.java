@@ -11,7 +11,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 
 public class ProxyThread extends Thread {
 	private Socket clientSocket = null;
@@ -23,9 +22,9 @@ public class ProxyThread extends Thread {
 	
 	public void run() {
 		try {
-			System.out.println("Running...");
+			System.out.println("--------------------------------------------------------------------------------------------");
+			System.out.println("Running new ProxyThread ...");
 			DataOutputStream outToClient = new DataOutputStream(clientSocket.getOutputStream());
-//			BufferedWriter outToClient = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()), 512);
 			BufferedReader inFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 			
 			String inLine;
@@ -37,7 +36,6 @@ public class ProxyThread extends Thread {
 			String path = "";
 			String header = "";			
 			
-//			while (((inLine = inFromClient.readLine()) != null)) {
 			while (inFromClient.ready()) {
 				inLine = inFromClient.readLine();
 				//handle the first line, the rest goes to the header variable
@@ -50,27 +48,14 @@ public class ProxyThread extends Thread {
 					path = uri.getRawPath();
 					System.out.println("Request for host: " + host + " and path: " + path);
 				} else {
-//					System.out.println("inLine added to header: " + inLine);
 					header += inLine;
 					header += "\r\n";
 				}
 				cnt++;
 			}
 
-			// Add the final crlf
+			// Add the final crlf indicating End of message
 			header += "\r\n";
-
-//			System.out.println("host = " + host);
-//			System.out.println("path = " + path);
-//			System.out.println("httpStr = " + httpStr);
-//			System.out.println("header = " + header);
-//			String host = "www.google.com";
-//			String path = "/movies";
-//			String httpStr = "HTTP/1.1";
-//			String header = "User-Agent: curl/7.37.0\r\n" +
-//							"Host: www.google.com\r\n" +
-//							"Accept: */*\r\n" +
-//							"Proxy-Connection: Keep-Alive\r\n\r\n";
 			
 			Socket serverSocket = new Socket(host, 80);
 			System.out.println("serverSocket established: " + serverSocket.getLocalPort() + ":" + serverSocket.getPort());
@@ -78,23 +63,37 @@ public class ProxyThread extends Thread {
 			String requestString = "GET " + path + " " + httpStr + "\r\n";
 			requestString += header;
 			PrintWriter outToServer = new PrintWriter(serverSocket.getOutputStream());
-//			System.out.println("Sending: " + requestString);
 			outToServer.print(requestString);
 			outToServer.flush();
 			
 			BufferedReader inFromServer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
 			String inStr;
-			System.out.println("--------------------------------------------------------------------------------------------");
+//			System.out.println("--------------------------------------------------------------------------------------------");
+			int i = 0, j = 0;
+			//read the headers first
+			System.out.println("\tProcesing Header");
 			while ((inStr = inFromServer.readLine()) != null) {
-//			while (inFromServer.ready()) {
-//				inStr = inFromServer.readLine();
-//				System.out.println(inStr);
+				if (inStr.isEmpty()) break;
+				i++;
 				outToClient.writeChars(inStr);
 				outToClient.flush();
 			}
-			
+			//now read the body
+			System.out.println("\tProcessing Body");
+			while ((inStr = inFromServer.readLine()) != null) {
+					if (inStr.isEmpty()) break;
+					j++;
+					outToClient.writeChars(inStr);
+					outToClient.flush();
+				}
+			outToClient.writeChars("\n");
+			System.out.println("Closing connections ...");
+			System.out.println("--------------------------------------------------------------------------------------------");
+			inFromServer.close();
+			inFromClient.close();
 			serverSocket.close();
 			clientSocket.close();
+//			System.exit(0);
 		} catch (SocketException e) {
 			System.out.println("Caught SocketException: " + e.getMessage());
 		} catch (IOException e) {
