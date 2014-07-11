@@ -4,11 +4,12 @@
 Compiling is simple;
 - Requirements: latest version of Java SDK installed
 - ensure javac is accessible through your path.
+- cd into the src directory
 - type "javac csci6431/*.java"; this will compile the two java files and output 
 	- csci6431/HTTPProxyServer.class, and 
 	- csci6431/ProxyThread.class.
 
 Running is also simple:
 - type "java csci6431.HTTPProxyServer <port number>".
-- each time you connect to the server it will start a new ProxyThread on a different port,
+- The server is multi-threaded so each time you connect to the server it will start a new ProxyThread on a different port,
 handle the request, and return the response to the calling process.
